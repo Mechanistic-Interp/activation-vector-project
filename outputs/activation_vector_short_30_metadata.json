@@ -1,0 +1,17 @@
+{
+  "text": "The capital of France is Paris",
+  "mode": "short",
+  "shape": [
+    5120
+  ],
+  "d_model": 5120,
+  "layers_used": [
+    25,
+    26,
+    27
+  ],
+  "activation_types": [
+    "resid_post"
+  ],
+  "pooling_method": "exp"
+}

@@ -20,7 +20,7 @@
   ```
 - [ ] **Implement chunking strategy** (process 100-500 texts per batch to manage memory)
 - [ ] **Use existing `Pythia12BActivationExtractor`** for vector extraction
-- [ ] **Configure target layers** [25, 26, 27] and pooling strategy ("exp")
+- [ ] **Configure target layers** [25, 26, 27] and pooling mode ("short" or "long")
 - [ ] **Add error handling** for failed extractions
 
 ## Phase 3: Storage and Incremental Processing
@@ -106,7 +106,7 @@ for i, batch in enumerate(chunk(vectors, batch_size=200)):
 
 ✅ **Performance**: Process 5,000 training samples in < 2 hours  
 ✅ **Memory**: Handle large datasets without OOM errors  
-✅ **Accuracy**: Mean vectors have expected dimensions (5120 for short, 15360 for long)  
+✅ **Accuracy**: Mean vectors have expected dimensions (5120 for short, 20480 for long)  
 ✅ **Reproducibility**: Same mean vector for same input data and seed  
 ✅ **Usability**: Simple CLI interface for running mean computation  
 

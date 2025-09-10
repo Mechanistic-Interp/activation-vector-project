@@ -5,23 +5,16 @@ This system uses TransformerLens to extract residual stream activation vectors f
 
 ## Files Created
 
-### 1. `activation_extraction_modal.py`
-Main Modal deployment file that provides:
+### 1. `src/extract_vector.py`
+Modal deployment file that provides:
 - **Pythia12BActivationExtractor**: Core class with GPU memory snapshots for fast cold starts
-- **get_activation_vector(text, mode)**: Extract activation vectors
-  - `short` mode: Mean-pooled 5120-dimensional vector
-  - `long` mode: Concatenated 15360-dimensional vector (3 layers × 5120)
-- **compute_mean_vector(documents, mode)**: Compute mean vector from training documents for centering
-- **compute_cosine_similarity(text1, text2, mode, subtract_mean)**: Calculate similarity between texts
-- **batch_compute_similarities()**: Compare reference text against multiple documents
-- Web API endpoints for remote access
+- **get_activation_vector(text, pooling_strategy)**: Extract activation vectors
+  - `short`: 5120-dim (mean across layers → exp-weight across tokens)
+  - `long`: 20480-dim (concat of [last token, 2.3%, 6.7%, 15.9% exp-weighted pools])
+- **get_activation_matrix(text)**: [5120, tokens] (mean across layers, reversed order)
 
-### 2. `activation_client.py`
-Client script for testing and analysis:
-- Interactive mode for exploring document similarities
-- Visualization tools (similarity plots, heatmaps)
-- Batch processing capabilities
-- Support for mean-centered vectors
+### 2. `cosine_similarity.py`
+Example client script for testing and analysis via Modal calls.
 
 ## Technical Details
 
@@ -37,8 +30,8 @@ Client script for testing and analysis:
 2. Forward pass through model with activation caching
 3. Extract `resid_post` (residual stream after attention + MLP) from layers 25-27
 4. Pool activations:
-   - **Short mode**: Mean across layers → 5120-dim vector
-   - **Long mode**: Concatenate layers → 15360-dim vector
+   - **Short mode**: Mean across layers → exp-weight across tokens → 5120-dim vector
+   - **Long mode**: Concat of [last token, 2.3%, 6.7%, 15.9% exp-weighted pools] → 20480-dim vector
 5. L2-normalize vectors for cosine similarity
 
 ### TransformerLens Features Used
@@ -51,88 +44,44 @@ Client script for testing and analysis:
 
 ### Deploy to Modal
 ```bash
-modal deploy activation_extraction_modal.py
+modal deploy src/extract_vector.py
 ```
 
 ### Local Testing
 ```bash
 # Test extraction
-modal run activation_extraction_modal.py --text "Your text here"
+modal run src/extract_vector.py --text "Your text here"
 
-# Test similarity
-modal run activation_extraction_modal.py --action similarity
+# Test similarity (see cosine_similarity.py for full example)
+modal run cosine_similarity.py --text1 "A" --text2 "B"
 
-# Test batch similarity
-modal run activation_extraction_modal.py --action batch
+# Generate CSVs for samples
+modal run generate_vector_csv.py
 ```
 
 ### Using the Client
 ```bash
 # Interactive mode
-python activation_client.py --endpoint <MODAL_ENDPOINT_URL>
+modal run cosine_similarity.py --text1 "First" --text2 "Second"
 
 # Compare two texts
-python activation_client.py --endpoint <URL> --action compare \
-  --text1 "First text" --text2 "Second text"
+modal run cosine_similarity.py --text1 "First text" --text2 "Second text"
 
 # Batch comparison
-python activation_client.py --endpoint <URL> --action batch
+# See generate_vector_csv.py for batch export
 
 # Create similarity matrix
-python activation_client.py --endpoint <URL> --action matrix --visualize
+# Visualization is not included in this repo
 ```
 
-## API Endpoints
+## Modal Calls
 
-### Extract Activation Vector
-```json
-POST /extract-activation
-{
-  "text": "Your input text",
-  "mode": "short",
-  "return_tokens": false
-}
-```
-
-### Compute Similarity
-```json
-POST /extract-activation
-{
-  "action": "similarity",
-  "text1": "First text",
-  "text2": "Second text",
-  "mode": "short",
-  "subtract_mean": false
-}
-```
-
-### Compute Mean Vector
-```json
-POST /extract-activation
-{
-  "action": "mean_vector",
-  "documents": ["doc1", "doc2", "doc3"],
-  "mode": "short"
-}
-```
-
-### Batch Similarities
-```json
-POST /extract-activation
-{
-  "action": "batch_similarity",
-  "reference_text": "Reference text",
-  "comparison_texts": ["text1", "text2"],
-  "mode": "short",
-  "subtract_mean": false,
-  "mean_documents": ["doc1", "doc2"]
-}
-```
+Use `modal.Cls.from_name("activation-vector-project", "Pythia12BActivationExtractor")` and call `.get_activation_vector.remote(text=..., pooling_strategy="short"|"long")`. See `cosine_similarity.py` for a concrete example.
 
 ## Key Features
 
 1. **GPU Memory Snapshots**: Fast cold starts on Modal using memory snapshots
-2. **Flexible Pooling**: Short (5120-dim) or long (15360-dim) vectors
+2. **Flexible Pooling**: Short (5120-dim) or long (20480-dim) vectors
 3. **Mean Centering**: Subtract mean vector from training data for better discrimination
 4. **Batch Processing**: Efficiently process multiple documents
 5. **Visualization**: Built-in plotting for similarity analysis

@@ -23,7 +23,12 @@ activation-vector-project/
     │   └── settings.local.json
     ├── deploy.py
     ├── extract_vector.py
-    ├── pooling.py
+    ├── utils/
+    │   ├── __init__.py
+    │   ├── pooling.py
+    │   ├── io.py
+    │   ├── centering.py
+    │   └── volume_utils.py
     ├── pythia_12b_modal_snapshot.py
     └── training_data/
         ├── get_training_data.py
@@ -39,7 +44,10 @@ Main source code directory containing the activation extraction system.
 
 - **`extract_vector.py`** - Primary Modal application for Pythia-12B activation extraction. Contains the `Pythia12BActivationExtractor` class with methods for getting activation vectors and model information. Includes web endpoints and local entrypoint for testing.
 
-- **`pooling.py`** - Token pooling utilities for activation matrices. Implements four pooling strategies: exponential decay, mean, last token, and softmax normalization. All computations performed in float32 for numerical stability.
+- **`src/utils/pooling.py`** - Token pooling utilities for activation matrices. Exposes two strategies:
+  - `short`: single 5120-d vector via exponential weighting across tokens (after mean across layers)
+  - `long`: 4×5120 concatenation of [last token, ExpWeight-A (≈2.3%), ExpWeight-B (≈6.7%), ExpWeight-C (≈15.9%)]
+  All computations performed in float32 for numerical stability.
 
 - **`deploy.py`** - Deployment utilities and configuration helpers.
 
@@ -93,8 +101,8 @@ Claude AI assistant configuration files for project-specific settings.
 - Features: GPU memory snapshots, volume caching
 
 **Vector Output Modes**:
-- Short: 5120-dimensional (mean across layers)
-- Long: 15360-dimensional (concatenated layers)
+- Short: 5120-dimensional (mean across layers, then exp-weight across tokens; depth ≈ 6.7% of doc length)
+- Long: 20480-dimensional (concat of [last token, 2.3%, 6.7%, 15.9% exp-weighted pools])
 
 ## Usage
 
@@ -113,23 +121,26 @@ modal deploy src/extract_vector.py
 modal run src/training_data/get_training_data.py --num_samples 1000 --save_local
 ```
 
-## API Endpoints
+## Programmatic Usage (Modal)
 
-### Extract Activation Vector
-```
-POST /extract-activation
-{
-  "text": "Input text",
-  "mode": "short",
-  "target_layers": [25, 26, 27],
-  "pooling_strategy": "exp"
-}
-```
+Use Modal method calls rather than HTTP endpoints. Example: see `cosine_similarity.py` and `generate_vector_csv.py` for patterns using `modal.Cls.from_name("activation-vector-project", "Pythia12BActivationExtractor")` and calling `.get_activation_vector.remote(text=..., pooling_strategy="short"|"long")`.
 
-### Health Check
-```
-GET /health
-```
+## Diagnostics & Visualization
+
+- Generate centered/raw CSVs for bundled samples:
+  - `modal run generate_vector_csv.py` (raw)
+  - `modal run generate_vector_csv.py --center` (centered via latest corpus mean in volume)
+
+- Visualize correctness for a specific text (saves plots under `outputs/diagnostics`):
+  ```bash
+  modal run src/diagnostics/visualize_vectors.py --text "Your text here" --center --mode long
+  # or
+  modal run src/diagnostics/visualize_vectors.py --file path/to/text.txt --center --mode long
+  ```
+  The tool compares `(raw_long - centered_long)` against the predicted mean contribution
+  obtained by pooling the corpus mean slice with the same weighting curves, and plots:
+  - Long vector chunk norms: raw vs centered vs (raw - centered)
+  - Alignment per chunk with cosine similarity overlays
 
 ## Dependencies
 

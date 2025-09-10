@@ -1,0 +1,69 @@
+# The Numbers Game
+
+Detective Sarah Chen stared at the spreadsheet until the numbers blurred together, rubbing her tired eyes as the precinct's fluorescent lights buzzed overhead. Across from her, Detective Marcus Riley was building what had to be his fifth coffee tower of the day—empty cups stacked in a precarious pyramid that defied both physics and workplace safety regulations.
+
+"Tell me again why we're the ones stuck with white-collar crime?" Marcus asked, adding another cup to his architectural achievement. "I joined the force to chase bad guys through alleys, not chase decimal points through databases."
+
+Sarah laughed, the kind of exhausted chuckle that comes after fourteen hours of analyzing financial records. They had been partners for eight years, best friends for longer, ever since they met at the police academy and bonded over their shared inability to fold fitted sheets and their mutual addiction to terrible cop show marathons.
+
+"Because we're apparently the only detectives in the precinct who can balance our own checkbooks," Sarah replied, highlighting another suspicious transaction. "Besides, this case is bigger than it looks."
+
+The case had started simple enough—a tip about unusual trading activity at Meridian Financial, a mid-sized investment firm downtown. But what began as a routine insider trading investigation had evolved into something that made Sarah's detective instincts tingle with anticipation. The trades weren't just suspicious; they were impossibly precise, as if someone had a crystal ball for the stock market.
+
+Marcus leaned back in his chair, which protested with a squeak that had become the unofficial soundtrack of their partnership. "Okay, walk me through it one more time. But slowly, and pretend I failed economics. Twice."
+
+Sarah pulled up the timeline they had been building for three weeks. "Six months ago, someone starts making trades through shell accounts. Nothing huge individually, but they're betting against companies right before bad news hits. Every. Single. Time."
+
+"And bad news being..."
+
+"FDA rejections, failed audits, executive scandals. Things that tank stock prices overnight." Sarah pointed to her monitor. "Look at this pattern. Three days before Phoenix Pharmaceuticals announces their drug trial failed, someone shorts fifty thousand shares. Two days before Coastal Airlines reveals their safety violations, boom—another short position."
+
+Marcus studied the screen, his joking demeanor shifting into the focused intensity Sarah had learned to recognize. Despite his wisecracks, Marcus had an intuitive grasp of human nature that made him an excellent detective. He could spot a lie from across the room and read body language like others read street signs.
+
+"So someone's got inside information," he said. "Question is, how many someones are we talking about? And are they getting their tips from company insiders, or..."
+
+"Or they're creating the bad news themselves," Sarah finished. "That's what's been bothering me. The timing isn't just lucky—it's orchestrated."
+
+Their breakthrough came from an unlikely source. Marcus had insisted on interviewing every employee at Meridian Financial, claiming that financial criminals always tried to hide in plain sight. Most interviews had been routine, but then they met Jessica Wong, a junior analyst with nervous energy and fingernails bitten down to the quick.
+
+"She knows something," Marcus had whispered to Sarah after Jessica stammered through basic questions about her job responsibilities.
+
+They brought Jessica in for a follow-up interview, and Sarah employed the gentle approach that had served her well over the years. She made tea instead of coffee, asked about Jessica's family, and gradually created an atmosphere where confession felt like relief rather than betrayal.
+
+"I never meant for it to get this big," Jessica finally admitted, her voice barely above a whisper. "It started as just... information sharing."
+
+The story that emerged was more complex than either detective had anticipated. Jessica had discovered that her boyfriend, David Park, worked in IT support for several major corporations. During casual conversations about their respective workdays, she had mentioned which companies her firm was researching for potential investments. David, in turn, had shared gossip about system crashes, security breaches, and internal emails he encountered during his work.
+
+"We started small," Jessica explained, tears streaming down her face. "Just a few trades based on things David overheard. It was supposed to be harmless."
+
+But harmless had escalated when David realized the potential scope of information he could access. He had begun deliberately seeking out sensitive data, using his legitimate IT access to dig deeper into corporate secrets. The couple's modest trades had evolved into a sophisticated operation involving multiple shell companies and millions of dollars.
+
+"The scary part," Sarah told Marcus during their late-night debrief, "is how easy it was. Two regular people with regular jobs, and they nearly broke the system."
+
+Marcus nodded, finally abandoning his coffee cup tower. "Makes you wonder how many others are doing the same thing. We caught these two because they got greedy and created a pattern. What about the ones smart enough to stay small and random?"
+
+They had solved the case, but Sarah felt the familiar mix of satisfaction and unease that came with complex investigations. Jessica and David would face federal charges, their lives forever changed by decisions that had probably seemed small and harmless at the time.
+
+"You know what bothers me most?" Sarah asked as they prepared to finally leave the precinct after another eighteen-hour day.
+
+"That we'll never know if this was an isolated incident or just the tip of the iceberg?"
+
+"That, and the fact that we're going to spend the next month filling out federal paperwork instead of solving real crimes."
+
+Marcus laughed, the genuine kind this time. "Hey, at least we caught the bad guys. And nobody had to chase anyone through any alleys."
+
+"True," Sarah agreed. "But next time someone mentions insider trading, I'm suddenly developing a severe allergy to financial records."
+
+As they walked to their cars in the nearly empty parking garage, Sarah reflected on their partnership. Eight years of solved cases, countless late nights, and enough coffee to float a small boat. Marcus drove her crazy with his jokes and his mess, but she trusted him completely—with her cases, her career, and her life.
+
+Tomorrow would bring new cases, new mysteries, and probably more terrible coffee. But whatever came next, they would face it together, two best friends who had chosen to spend their careers standing between chaos and order, armed with nothing more than determination, experience, and an unshakeable faith in each other.
+
+"Same time tomorrow?" Marcus called across the garage.
+
+"Wouldn't miss it," Sarah replied, and meant it completely.
+
+---
+
+## 40-Word Version
+
+Detective best friends Sarah Chen and Marcus Riley uncover an insider trading scheme at Meridian Financial. Junior analyst Jessica Wong and her IT boyfriend David Park exploited corporate access for illegal trades, turning casual information sharing into millions in fraudulent profits.

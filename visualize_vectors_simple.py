@@ -49,7 +49,7 @@ def load_vectors_from_csv(filepath: str) -> Dict[str, np.ndarray]:
 def plot_vector_analysis(vector: np.ndarray, sample_name: str):
     """Create comprehensive visualization for a single vector."""
     
-    fig = plt.figure(figsize=(16, 10))
+    fig = plt.figure(figsize=(24, 14))
     fig.suptitle(f'Activation Vector Analysis: {sample_name}', fontsize=14, fontweight='bold')
     
     # 1. Distribution histogram
@@ -65,27 +65,20 @@ def plot_vector_analysis(vector: np.ndarray, sample_name: str):
     ax1.legend()
     ax1.grid(True, alpha=0.3)
     
-    # 2. Dimension visualization - show all dimensions with subsampling if needed
+    # 2. All dimensions as bar chart - exactly like your reference image
     ax2 = plt.subplot(2, 3, 2)
     total_dims = len(vector)
     
-    # For long vectors (20480 dims), subsample for visibility
-    if total_dims > 5000:
-        # Show every Nth dimension to fit in plot
-        step = total_dims // 1000  # Show ~1000 points
-        indices = np.arange(0, total_dims, step)
-        values = vector[::step]
-        title_suffix = f" (every {step}th dim shown)"
-    else:
-        indices = np.arange(total_dims)
-        values = vector
-        title_suffix = ""
+    # Create bar chart for ALL dimensions
+    indices = np.arange(total_dims)
+    colors = ['blue' if v >= 0 else 'red' for v in vector]
     
-    colors = ['red' if v < 0 else 'blue' for v in values]
-    ax2.scatter(indices, values, c=colors, alpha=0.3, s=1)
+    # Use bar plot for better visibility of individual dimensions
+    ax2.bar(indices, vector, color=colors, width=1.0, edgecolor='none', alpha=0.7)
+    
     ax2.set_xlabel('Dimension Index')
     ax2.set_ylabel('Value')
-    ax2.set_title(f'All {total_dims} Dimensions{title_suffix}')
+    ax2.set_title(f'Full {total_dims}-Dimensional Vector')
     ax2.axhline(y=0, color='black', linestyle='-', linewidth=0.5)
     ax2.grid(True, alpha=0.3, axis='y')
     
@@ -93,10 +86,14 @@ def plot_vector_analysis(vector: np.ndarray, sample_name: str):
     if total_dims == 20480:  # Long mode
         for i in range(1, 4):
             ax2.axvline(x=i*5120, color='green', linestyle='--', alpha=0.5, linewidth=1)
-        ax2.text(2560, ax2.get_ylim()[1]*0.9, 'Last Token', ha='center', fontsize=8)
-        ax2.text(7680, ax2.get_ylim()[1]*0.9, 'Exp 97.7%', ha='center', fontsize=8)
-        ax2.text(12800, ax2.get_ylim()[1]*0.9, 'Exp 93.3%', ha='center', fontsize=8)
-        ax2.text(17920, ax2.get_ylim()[1]*0.9, 'Exp 84.1%', ha='center', fontsize=8)
+        # Add labels at the bottom
+        ax2.text(2560, ax2.get_ylim()[0]*1.1, 'Last Token', ha='center', fontsize=7, color='green')
+        ax2.text(7680, ax2.get_ylim()[0]*1.1, 'Exp 97.7%', ha='center', fontsize=7, color='green')
+        ax2.text(12800, ax2.get_ylim()[0]*1.1, 'Exp 93.3%', ha='center', fontsize=7, color='green')
+        ax2.text(17920, ax2.get_ylim()[0]*1.1, 'Exp 84.1%', ha='center', fontsize=7, color='green')
+    
+    # Set x-axis to show full range
+    ax2.set_xlim(-100, total_dims + 100)
     
     # 3. Box plot
     ax3 = plt.subplot(2, 3, 3)
@@ -145,7 +142,9 @@ def plot_vector_analysis(vector: np.ndarray, sample_name: str):
     ax6.axis('off')
     
     # Calculate statistics
-    stats_text = f"""Statistics Summary:
+    vector_type = "LONG (4×5120)" if len(vector) == 20480 else f"SHORT ({len(vector)})"
+    
+    stats_text = f"""Statistics Summary - {vector_type}:
     
 Dimensions:     {len(vector):,}
 Mean:           {np.mean(vector):.6f}
@@ -164,6 +163,13 @@ L2 Magnitude:   {np.linalg.norm(vector):.2f}
 L1 Magnitude:   {np.sum(np.abs(vector)):.2f}
 """
     
+    # Add per-strategy stats for long mode
+    if len(vector) == 20480:
+        stats_text += "\nPer-Strategy Magnitudes:\n"
+        for i, name in enumerate(['Last Token', 'Exp 97.7%', 'Exp 93.3%', 'Exp 84.1%']):
+            segment = vector[i*5120:(i+1)*5120]
+            stats_text += f"  {name:12}: {np.linalg.norm(segment):.2f}\n"
+    
     ax6.text(0.1, 0.5, stats_text, transform=ax6.transAxes, fontsize=9,
              verticalalignment='center', family='monospace')
     
@@ -174,7 +180,7 @@ L1 Magnitude:   {np.sum(np.abs(vector)):.2f}
 def compare_vectors(vectors: Dict[str, np.ndarray], sample_names: List[str]):
     """Compare multiple vectors side by side."""
     
-    fig = plt.figure(figsize=(16, 8))
+    fig = plt.figure(figsize=(20, 10))
     fig.suptitle(f'Vector Comparison: {", ".join(sample_names)}', fontsize=14, fontweight='bold')
     
     # 1. Distribution overlay

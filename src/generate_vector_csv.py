@@ -8,10 +8,11 @@ dimension is one row down (i.e., values go down the rows), rather than being
 pipe-separated into a single cell.
 
 Usage:
-    modal run generate_vector_csv.py
+    modal run -m src.generate_vector_csv
 """
 
 import modal
+from modal import enable_output
 import csv
 import json
 import glob
@@ -34,7 +35,7 @@ app = modal.App("generate-vector-csv")
 
 # Mount the training data volume to discover corpus mean files
 training_volume = modal.Volume.from_name(
-    "activation-vector-project", create_if_missing=True
+    "training_data", create_if_missing=True
 )
 
 
@@ -133,8 +134,8 @@ def main(center: bool = False):
                 training-data volume (auto-resolved inside the extractor).
 
     Usage:
-        modal run generate_vector_csv.py
-        modal run generate_vector_csv.py --center
+        modal run -m src.generate_vector_csv
+        modal run -m src.generate_vector_csv --center
     """
 
     print("🔬 GENERATING VECTOR ANALYSIS CSV FROM EXISTING TEXT SAMPLES")
@@ -154,7 +155,8 @@ def main(center: bool = False):
     # If centering is requested, resolve the latest corpus mean path inside the volume
     centering_vector: Optional[str] = None
     if center:
-        centering_vector = resolve_latest_corpus_mean_path.remote()
+        with enable_output():
+            centering_vector = resolve_latest_corpus_mean_path.remote()
         print(f"📦 Using corpus mean: {centering_vector}")
 
     # Prepare containers for vectors (preserve order: 10 long samples, then 10 short samples)
@@ -177,22 +179,24 @@ def main(center: bool = False):
         try:
             # Long mode extraction
             print(f"   🔬 Extracting long mode vector...")
-            result_long = extractor.get_activation_vector.remote(
-                text=text,
-                pooling_strategy="long",
-                center=center,
-                centering_vector=centering_vector,
-            )
+            with enable_output():
+                result_long = extractor.get_activation_vector.remote(
+                    text=text,
+                    pooling_strategy="long",
+                    center=center,
+                    centering_vector=centering_vector,
+                )
             long_mode_vectors.append(result_long["vector"])
 
             # Short mode extraction
             print(f"   🔬 Extracting short mode vector...")
-            result_short = extractor.get_activation_vector.remote(
-                text=text,
-                pooling_strategy="short",
-                center=center,
-                centering_vector=centering_vector,
-            )
+            with enable_output():
+                result_short = extractor.get_activation_vector.remote(
+                    text=text,
+                    pooling_strategy="short",
+                    center=center,
+                    centering_vector=centering_vector,
+                )
             short_mode_vectors.append(result_short["vector"])
 
             print(f"   ✅ Long mode: {len(result_long['vector'])} dims")
@@ -217,22 +221,24 @@ def main(center: bool = False):
         try:
             # Long mode extraction
             print(f"   🔬 Extracting long mode vector...")
-            result_long = extractor.get_activation_vector.remote(
-                text=text,
-                pooling_strategy="long",
-                center=center,
-                centering_vector=centering_vector,
-            )
+            with enable_output():
+                result_long = extractor.get_activation_vector.remote(
+                    text=text,
+                    pooling_strategy="long",
+                    center=center,
+                    centering_vector=centering_vector,
+                )
             long_mode_vectors.append(result_long["vector"])
 
             # Short mode extraction
             print(f"   🔬 Extracting short mode vector...")
-            result_short = extractor.get_activation_vector.remote(
-                text=text,
-                pooling_strategy="short",
-                center=center,
-                centering_vector=centering_vector,
-            )
+            with enable_output():
+                result_short = extractor.get_activation_vector.remote(
+                    text=text,
+                    pooling_strategy="short",
+                    center=center,
+                    centering_vector=centering_vector,
+                )
             short_mode_vectors.append(result_short["vector"])
 
             print(f"   ✅ Long mode: {len(result_long['vector'])} dims")

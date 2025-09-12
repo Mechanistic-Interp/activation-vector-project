@@ -14,6 +14,7 @@ result = extractor.get_activation_vector.remote(text="Your text", mode="short")
 """
 
 import modal
+from modal import enable_output
 from typing import Dict, Any, Literal, List, Optional
 from src.utils.pooling import pool_tokens
 from src.utils.io import save_vector_to_disk
@@ -27,10 +28,8 @@ model_cache = modal.Volume.from_name(
     "pythia-12b-transformer-lens-cache", create_if_missing=True
 )
 
-# Reference training data volume for corpus mean access
-training_volume = modal.Volume.from_name(
-    "activation-vector-project", create_if_missing=True
-)
+# Reference training data volume for corpus mean access (shared naming)
+training_volume = modal.Volume.from_name("training_data", create_if_missing=True)
 
 # Define the container image with TransformerLens and dependencies
 image = modal.Image.debian_slim(python_version="3.10").pip_install(
@@ -39,6 +38,7 @@ image = modal.Image.debian_slim(python_version="3.10").pip_install(
     "transformers>=4.37.2",
     "safetensors==0.4.1",
     "typeguard",
+    "packaging",
 )
 
 # Import heavy dependencies at image level for GPU snapshots
@@ -78,6 +78,18 @@ class Pythia12BActivationExtractor:
         os.environ["HF_HOME"] = cache_dir
         os.environ["TRANSFORMERS_CACHE"] = cache_dir
         os.environ["TORCH_HOME"] = cache_dir
+
+        # Prefer A100-friendly matmul behavior when on CUDA (TF32 acceleration)
+        try:
+            if torch.cuda.is_available():
+                torch.backends.cuda.matmul.allow_tf32 = True
+                torch.backends.cudnn.allow_tf32 = True
+                # High precision still honors TF32 kernels on A100 for fp32 ops
+                if hasattr(torch, "set_float32_matmul_precision"):
+                    torch.set_float32_matmul_precision("high")
+        except Exception:
+            # Non-fatal; continue with defaults if backend flags aren't available
+            pass
 
         if self.verbose:
             print("Loading Pythia 12B with TransformerLens for snapshot...")
@@ -129,6 +141,17 @@ class Pythia12BActivationExtractor:
             print(f"Model device: {self.device}")
             print(f"Model dtype: {next(self.model.parameters()).dtype}")
             print("GPU memory snapshot will be created after this method completes.")
+
+        # Warm up a tiny forward pass to fully materialize weights/kernels on GPU
+        # so the GPU snapshot captures an initialized runtime.
+        try:
+            if self.device == "cuda":
+                with torch.inference_mode():
+                    warm_tokens = self.model.to_tokens("Hello", prepend_bos=True)
+                    _ = self.model(warm_tokens[:, :1])  # 1-token pass
+        except Exception:
+            # If warmup fails, continue — snapshot will still include weights on GPU
+            pass
 
     # Helper functions for shared extraction logic
 
@@ -435,13 +458,13 @@ def main(
 
     Usage:
         # Test vector extraction
-        modal run src/extract_vector.py --text "Your text here" --mode "short"
+        modal run -m src.extract_vector --text "Your text here" --mode short
 
         # Test matrix extraction (for corpus mean)
-        modal run src/extract_vector.py --text "Your text here" --mode "matrix"
+        modal run -m src.extract_vector --text "Your text here" --mode matrix
 
         # Deploy to Modal
-        modal deploy src/extract_vector.py
+        modal deploy -m src.extract_vector
     """
     print("\n" + "=" * 60)
     print("Pythia 12B Activation Vector Extraction")
@@ -450,9 +473,10 @@ def main(
     # Create extractor instance
     extractor = Pythia12BActivationExtractor()
 
-    # Get model info
+    # Get model info with output enabled
     print("Model Information:")
-    info = extractor.get_model_info.remote()
+    with enable_output():
+        info = extractor.get_model_info.remote()
     for key, value in info.items():
         print(f"  {key}: {value}")
     print()
@@ -473,10 +497,11 @@ def main(
         print("\n" + "=" * 60)
         print("Testing get_activation_matrix() for corpus mean...")
 
-        result = extractor.get_activation_matrix.remote(
-            text=text,
-            target_layers=layers,
-        )
+        with enable_output():
+            result = extractor.get_activation_matrix.remote(
+                text=text,
+                target_layers=layers,
+            )
 
         print("Matrix Results:")
         print(f"  Matrix shape: {result['shape']}")
@@ -492,11 +517,12 @@ def main(
         print("\n" + "=" * 60)
         print("Testing get_activation_vector()...")
 
-        result = extractor.get_activation_vector.remote(
-            text=text,
-            target_layers=layers,
-            pooling_strategy=mode,  # Use mode as pooling strategy (short/long)
-        )
+        with enable_output():
+            result = extractor.get_activation_vector.remote(
+                text=text,
+                target_layers=layers,
+                pooling_strategy=mode,  # Use mode as pooling strategy (short/long)
+            )
 
         print("Vector Results:")
         print(f"  Vector shape: {result['shape']}")

@@ -15,11 +15,12 @@ Features:
 - Detached execution: Computer can disconnect during aggregation
 
 Usage:
-    modal run src/corpus_mean.py extract --max_docs 1000
-    modal run src/corpus_mean.py aggregate
+    modal run -m src.corpus_mean extract --max-docs 1000
+    modal run -m src.corpus_mean aggregate
 """
 
 import modal
+from modal import enable_output
 import torch
 from typing import List, Dict, Any, Optional
 import os
@@ -36,7 +37,7 @@ Pythia12BExtractor = modal.Cls.from_name(
 
 # Reference training data volume
 training_volume = modal.Volume.from_name(
-    "activation-vector-project", create_if_missing=True
+    "training_data", create_if_missing=True
 )
 
 # Create corpus mean computation app
@@ -44,8 +45,7 @@ app = modal.App("corpus-mean-extraction")
 
 # Define the container image
 image = modal.Image.debian_slim(python_version="3.10").pip_install(
-    "torch==2.1.0",
-    "safetensors==0.4.1",
+    "torch==2.1.0", "safetensors==0.4.1", "packaging"
 )
 
 
@@ -162,8 +162,9 @@ def extract_single_document(
         # Create instance of deployed extractor
         extractor = Pythia12BExtractor()
 
-        # Extract activation matrix
-        result = extractor.get_activation_matrix.remote(text=text)
+        # Extract activation matrix with output enabled
+        with enable_output():
+            result = extractor.get_activation_matrix.remote(text=text)
 
         if result is None:
             return {
@@ -586,7 +587,7 @@ def extract(
     Each document processed independently and saved to volume.
 
     Usage:
-        modal run src/corpus_mean.py extract --max_docs 1000
+        modal run -m src.corpus_mean extract --max-docs 1000
     """
     print("=" * 80)
     print("STAGE 1: PARALLEL ACTIVATION EXTRACTION")
@@ -597,7 +598,8 @@ def extract(
     print()
 
     # Load training documents via Modal function with volume access
-    documents = load_documents_with_volume.remote(max_docs)
+    with enable_output():
+        documents = load_documents_with_volume.remote(max_docs)
 
     if not documents:
         raise ValueError("No training documents found")
@@ -621,7 +623,7 @@ def extract(
     )
     print()
     print("Next step: Run aggregation once all jobs complete:")
-    print("    modal run src/corpus_mean.py aggregate")
+    print("    modal run -m src.corpus_mean aggregate")
 
 
 # Stage 2: Aggregate saved matrices with checkpointing
@@ -637,7 +639,7 @@ def aggregate(checkpoint_interval: int = 500):
         checkpoint_interval: Save checkpoint every N files (default 500)
 
     Usage:
-        modal run src/corpus_mean.py aggregate --checkpoint_interval 500
+        modal run -m src.corpus_mean aggregate --checkpoint-interval 500
     """
     print("🚀 Starting robust corpus mean aggregation with checkpointing...")
     print("This will launch a detached job that can survive disconnections.")
@@ -649,7 +651,7 @@ def aggregate(checkpoint_interval: int = 500):
     print(f"✅ Detached aggregation job launched: {job}")
     print()
     print("📋 Monitor with:")
-    print("  modal run src/corpus_mean.py check_progress")
+    print("  modal run -m src.corpus_mean check_progress")
     print("  modal logs corpus-mean-extraction")
     print()
     print(
@@ -674,7 +676,7 @@ def extract_remaining(
     Uses same parallel processing architecture as the original extract() function.
 
     Usage:
-        modal run src/corpus_mean.py extract_remaining --max_docs 4000 --start_index 1000
+        modal run -m src.corpus_mean extract_remaining --max-docs 4000 --start-index 1000
     """
     print("=" * 80)
     print("STAGE 1.5: EXTRACT REMAINING DOCUMENTS")
@@ -685,7 +687,8 @@ def extract_remaining(
     print()
 
     # Load training documents via Modal function with volume access
-    documents = load_documents_with_volume.remote(max_docs, start_index)
+    with enable_output():
+        documents = load_documents_with_volume.remote(max_docs, start_index)
 
     if not documents:
         raise ValueError("No training documents found")
@@ -709,7 +712,7 @@ def extract_remaining(
     )
     print()
     print("Next step: Run aggregation once all jobs complete:")
-    print("    modal run src/corpus_mean.py aggregate")
+    print("    modal run -m src.corpus_mean aggregate")
 
 
 # Monitoring
@@ -718,7 +721,8 @@ def check_progress():
     """Check the progress of a running aggregation job."""
     print("🔍 Checking aggregation progress...")
 
-    result = check_aggregation_progress.remote()
+    with enable_output():
+        result = check_aggregation_progress.remote()
 
     print(f"\n📊 Status: {result['status'].upper()}")
     print(f"📝 {result['message']}")

@@ -1,6 +1,6 @@
 # Comparing Raw vs Centered Long Vectors to the Corpus Mean
 
-This note explains what `src/diagnostics/compare_vectors_with_mean.py` does, the expected inputs/outputs, and how to interpret the labels in both the input CSVs and the generated report.
+This note explains what `src.diagnostics.compare_vectors_with_mean` does, the expected inputs/outputs, and how to interpret the labels in both the input CSVs and the generated report.
 
 ## Goal
 
@@ -12,12 +12,12 @@ Where `pooled_mean_long` is computed by applying the same long‑mode pooling wi
 
 ## Inputs
 
-- `--mean_path` (required): Path to a local `corpus_mean_*.safetensors` downloaded from your Modal volume.
-- `--raw_csv` (required): Long‑mode vector CSV produced by `generate_vector_csv.py` (no centering).
-- `--centered_csv` (required): Long‑mode vector CSV produced by `generate_vector_csv.py --center`.
+- `--mean-path` (required): Path to a local `corpus_mean_*.safetensors` downloaded from your Modal volume.
+- `--raw-csv` (required): Long‑mode vector CSV produced by `generate_vector_csv.py` (no centering).
+- `--centered-csv` (required): Long‑mode vector CSV produced by `generate_vector_csv.py --center`.
 - Token length resolution (choose one):
-  - `--lengths_csv`: A CSV with one header row of labels matching the vector CSVs and one data row of integers giving effective token counts per sample (after reversal).
-  - `--use_text_samples`: Recomputes lengths by re‑processing the 20 bundled text files via the deployed extractor.
+  - `--lengths-csv`: A CSV with one header row of labels matching the vector CSVs and one data row of integers giving effective token counts per sample (after reversal).
+  - `--use-text-samples`: Recomputes lengths by re‑processing the 20 bundled text files via the deployed extractor.
 
 ## Output
 
@@ -69,27 +69,27 @@ For each sample/column:
 
 Generate the CSVs for the bundled samples:
 
-- Raw: `modal run src/generate_vector_csv.py`
-- Centered: `modal run src/generate_vector_csv.py --center`
+- Raw: `modal run -m src.generate_vector_csv`
+- Centered: `modal run -m src.generate_vector_csv --center`
 
 Run the comparison (recomputes lengths from the text files):
 
 ```
-modal run src/diagnostics/compare_vectors_with_mean.py \
-  --mean_path outputs/corpus_mean_XXXXXXXX.safetensors \
-  --raw_csv outputs/matrix_csv/vectors_long_mode_raw.csv \
-  --centered_csv outputs/matrix_csv/vectors_long_mode_centered.csv \
-  --use_text_samples
+modal run -m src.diagnostics.compare_vectors_with_mean \
+  --mean-path outputs/corpus_mean_XXXXXXXX.safetensors \
+  --raw-csv outputs/matrix_csv/vectors_long_mode_raw.csv \
+  --centered-csv outputs/matrix_csv/vectors_long_mode_centered.csv \
+  --use-text-samples
 ```
 
 Or provide explicit lengths:
 
 ```
-modal run src/diagnostics/compare_vectors_with_mean.py \
-  --mean_path outputs/corpus_mean_XXXXXXXX.safetensors \
-  --raw_csv outputs/matrix_csv/vectors_long_mode_raw.csv \
-  --centered_csv outputs/matrix_csv/vectors_long_mode_centered.csv \
-  --lengths_csv path/to/lengths.csv
+modal run -m src.diagnostics.compare_vectors_with_mean \
+  --mean-path outputs/corpus_mean_XXXXXXXX.safetensors \
+  --raw-csv outputs/matrix_csv/vectors_long_mode_raw.csv \
+  --centered-csv outputs/matrix_csv/vectors_long_mode_centered.csv \
+  --lengths-csv path/to/lengths.csv
 ```
 
 The report is saved to `outputs/diagnostics/compare_report.csv`.
@@ -99,4 +99,3 @@ The report is saved to `outputs/diagnostics/compare_report.csv`.
 - Cosine near 1.0 and small `l2_diff` → strong agreement with the centering identity for that chunk.
 - Lower cosine on a specific chunk may indicate that window is more sensitive to noise or mismatches in token length resolution.
 - Negative cosines can occur and indicate anticorrelation; check token lengths and centering path if unexpected.
-

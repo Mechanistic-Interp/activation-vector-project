@@ -7,10 +7,10 @@ from typing import List
 app = modal.App("training-data-fetcher")
 
 image = modal.Image.debian_slim(python_version="3.11").pip_install(
-    "datasets", "torch", "huggingface_hub"
+    "datasets", "torch", "huggingface_hub", "packaging"
 )
 
-volume = modal.Volume.from_name("activation-vector-project", create_if_missing=True)
+volume = modal.Volume.from_name("training_data", create_if_missing=True)
 
 
 def filter_by_word_count(text: str, min_words: int, max_words: int) -> bool:
@@ -209,9 +209,9 @@ def main(
         word_count_max: Maximum word count for filtering (default: 1500)
 
     Examples:
-        modal run src/training_data/get_training_data.py
-        modal run src/training_data/get_training_data.py --num_samples 1000 --word_count_min 500 --word_count_max 2000
-        modal run src/training_data/get_training_data.py --save_local --overwrite
+        modal run -m src.training_data.get_training_data
+        modal run -m src.training_data.get_training_data --num-samples 1000 --word-count-min 500 --word-count-max 2000
+        modal run -m src.training_data.get_training_data --save-local --overwrite
     """
     # Fetch data (will use cache unless overwrite=True)
     print(

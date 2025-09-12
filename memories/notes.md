@@ -48,8 +48,8 @@
 - **Snapshots**: `enable_memory_snapshot=True` for faster cold starts
 
 ## Key Commands
-- `modal run script.py` - run locally
-- `modal deploy script.py` - deploy to cloud
+- `modal run -m package.module` - run a module
+- `modal deploy -m package.module` - deploy to cloud
 - `modal app list` - see your apps
 - `modal app logs <app-name>` - view logs
 - `modal volume list` - see volumes

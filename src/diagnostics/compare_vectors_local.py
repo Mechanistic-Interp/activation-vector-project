@@ -2,14 +2,14 @@
 Compare (raw_long - centered_long) against pooled corpus mean per sample (local only).
 
 Inputs:
-  --mean_path: Path to local corpus_mean_*.safetensors
-  --raw_csv:   Long-mode vectors CSV (raw) from generate_vector_csv.py
-  --centered_csv: Long-mode vectors CSV (centered)
+  --mean-path: Path to local corpus_mean_*.safetensors
+  --raw-csv:   Long-mode vectors CSV (raw) from generate_vector_csv.py
+  --centered-csv: Long-mode vectors CSV (centered)
 
 Token lengths (choose one):
-  --lengths_csv: CSV with a header matching the vector CSV labels and one row of
+  --lengths-csv: CSV with a header matching the vector CSV labels and one row of
                  token lengths (ints) per sample (after reversal; same count either way).
-  --text_dir:    Directory containing the 20 standard text samples (defaults to
+  --text-dir:    Directory containing the 20 standard text samples (defaults to
                  src/training_data/text-samples). Lengths are computed locally via
                  HuggingFace tokenizer EleutherAI/pythia-12b. This matches the
                  extractor behavior (prepend BOS).
@@ -18,17 +18,17 @@ Output:
   Writes per-chunk metrics to outputs/diagnostics/compare_report_local.csv
 
 Run examples:
-  python src/diagnostics/compare_vectors_local.py \
-      --mean_path outputs/corpus_mean_1757478514.safetensors \
-      --raw_csv vectors_long_mode_raw.csv \
-      --centered_csv vectors_long_mode_centered.csv \
-      --text_dir src/training_data/text-samples
+  python -m src.diagnostics.compare_vectors_local \
+      --mean-path outputs/corpus_mean_1757478514.safetensors \
+      --raw-csv vectors_long_mode_raw.csv \
+      --centered-csv vectors_long_mode_centered.csv \
+      --text-dir src/training_data/text-samples
 
-  python src/diagnostics/compare_vectors_local.py \
-      --mean_path outputs/corpus_mean_1757478514.safetensors \
-      --raw_csv vectors_long_mode_raw.csv \
-      --centered_csv vectors_long_mode_centered.csv \
-      --lengths_csv token_lengths.csv
+  python -m src.diagnostics.compare_vectors_local \
+      --mean-path outputs/corpus_mean_1757478514.safetensors \
+      --raw-csv vectors_long_mode_raw.csv \
+      --centered-csv vectors_long_mode_centered.csv \
+      --lengths-csv token_lengths.csv
 """
 
 from __future__ import annotations
@@ -81,7 +81,7 @@ def _compute_lengths_from_texts(labels: List[str], text_dir: str) -> Dict[str, i
     except Exception as e:
         raise RuntimeError(
             "transformers is required to compute token lengths from texts. "
-            "Install it or provide --lengths_csv."
+            "Install it or provide --lengths-csv."
         ) from e
 
     long_files: List[str | None] = []
@@ -121,11 +121,12 @@ def _compute_lengths_from_texts(labels: List[str], text_dir: str) -> Dict[str, i
 
 def main():
     ap = argparse.ArgumentParser(description="Compare (raw - centered) against pooled corpus mean for long vectors (local)")
-    ap.add_argument("--mean_path", required=True, help="Path to corpus_mean_*.safetensors")
-    ap.add_argument("--raw_csv", required=True, help="Path to long-mode raw vectors CSV")
-    ap.add_argument("--centered_csv", required=True, help="Path to long-mode centered vectors CSV")
-    ap.add_argument("--lengths_csv", help="CSV with token lengths per sample (header + 1 row of ints)")
-    ap.add_argument("--text_dir", default="src/training_data/text-samples", help="Directory of text samples to infer lengths (if lengths_csv not provided)")
+    # Accept kebab-case flags, with underscore aliases for backward compatibility
+    ap.add_argument("--mean-path", "--mean_path", dest="mean_path", required=True, help="Path to corpus_mean_*.safetensors")
+    ap.add_argument("--raw-csv", "--raw_csv", dest="raw_csv", required=True, help="Path to long-mode raw vectors CSV")
+    ap.add_argument("--centered-csv", "--centered_csv", dest="centered_csv", required=True, help="Path to long-mode centered vectors CSV")
+    ap.add_argument("--lengths-csv", "--lengths_csv", dest="lengths_csv", help="CSV with token lengths per sample (header + 1 row of ints)")
+    ap.add_argument("--text-dir", "--text_dir", dest="text_dir", default="src/training_data/text-samples", help="Directory of text samples to infer lengths (if lengths_csv not provided)")
     ap.add_argument("--out", default=os.path.join("outputs", "diagnostics", "compare_report_local.csv"), help="Output CSV path for the report")
     args = ap.parse_args()
 
@@ -185,4 +186,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

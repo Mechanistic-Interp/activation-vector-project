@@ -53,6 +53,17 @@ class Pythia12BSnapshotInference:
         # Model configuration
         model_name = "EleutherAI/pythia-12b"
 
+        # Prefer A100-friendly matmul behavior when on CUDA (TF32 acceleration)
+        try:
+            if torch.cuda.is_available():
+                torch.backends.cuda.matmul.allow_tf32 = True
+                torch.backends.cudnn.allow_tf32 = True
+                if hasattr(torch, "set_float32_matmul_precision"):
+                    torch.set_float32_matmul_precision("high")
+        except Exception:
+            # Non-fatal; continue with defaults if backend flags aren't available
+            pass
+
         # Load tokenizer
         self.tokenizer = AutoTokenizer.from_pretrained(
             model_name,
@@ -339,8 +350,8 @@ def main(
     Test the Pythia 12B model with GPU snapshots locally.
 
     Usage:
-        modal run pythia_12b_modal_snapshot.py --text "Your input text"
-        modal run pythia_12b_modal_snapshot.py --batch  # Test batch mode
+    modal run -m src.pythia_12b_modal_snapshot --text "Your input text"
+    modal run -m src.pythia_12b_modal_snapshot --batch  # Test batch mode
     """
     print(f"\n{'=' * 60}")
     print("Pythia 12B Single Token Generation (GPU Snapshot Version)")
@@ -406,4 +417,4 @@ def main(
     print(
         "   First deployment will be slow, but subsequent starts will be much faster!"
     )
-    print("   Deploy with: modal deploy pythia_12b_modal_snapshot.py")
+    print("   Deploy with: modal deploy -m src.pythia_12b_modal_snapshot")

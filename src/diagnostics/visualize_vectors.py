@@ -5,8 +5,8 @@ Generates visual diagnostics for activation vectors to validate centering and
 long-vector composition. Saves plots under `outputs/diagnostics`.
 
 Usage examples:
-  modal run src/diagnostics/visualize_vectors.py --text "Your text" --center --mode long
-  modal run src/diagnostics/visualize_vectors.py --file path/to/text.txt --center --mode long
+  modal run -m src.diagnostics.visualize_vectors --text "Your text" --center --mode long
+  modal run -m src.diagnostics.visualize_vectors --file path/to/text.txt --center --mode long
 
 Behavior:
   - Resolves latest corpus_mean_*.safetensors from the mounted Modal volume
@@ -36,7 +36,7 @@ app = modal.App("vector-diagnostics")
 
 # Mount training data to resolve corpus mean file
 training_volume = modal.Volume.from_name(
-    "activation-vector-project", create_if_missing=True
+    "training_data", create_if_missing=True
 )
 
 

@@ -2,14 +2,14 @@
 Compare long vectors (raw vs centered) against pooled corpus mean per sample.
 
 Inputs:
-  --mean_path: Path to local corpus_mean_*.safetensors (downloaded from Modal)
-  --raw_csv:  CSV produced by generate_vector_csv.py (long mode, raw)
-  --centered_csv: CSV produced by generate_vector_csv.py --center (long mode, centered)
+  --mean-path: Path to local corpus_mean_*.safetensors (downloaded from Modal)
+  --raw-csv:  CSV produced by generate_vector_csv.py (long mode, raw)
+  --centered-csv: CSV produced by generate_vector_csv.py --center (long mode, centered)
 
 Token length resolution (choose one):
-  --lengths_csv: Optional CSV with one header row matching the vector CSV labels and one row
+  --lengths-csv: Optional CSV with one header row matching the vector CSV labels and one row
                  of integer token counts per sample (after reversal). If provided, used directly.
-  --use_text_samples: If set, resolves lengths by re-processing the standard 20 text samples
+  --use-text-samples: If set, resolves lengths by re-processing the standard 20 text samples
                       in src/training_data/text-samples via the deployed extractor.
 
 Outputs:
@@ -17,11 +17,11 @@ Outputs:
     Columns: sample, doc_len, chunk, cosine, l2_diff, l2_diff_normA, l2_diff_normB
 
 Run:
-  modal run src/diagnostics/compare_vectors_with_mean.py \
-    --mean_path outputs/corpus_mean_1757478514.safetensors \
-    --raw_csv vectors_long_mode_raw.csv \
-    --centered_csv vectors_long_mode_centered.csv \
-    --use_text_samples
+  modal run -m src.diagnostics.compare_vectors_with_mean \
+    --mean-path outputs/corpus_mean_1757478514.safetensors \
+    --raw-csv vectors_long_mode_raw.csv \
+    --centered-csv vectors_long_mode_centered.csv \
+    --use-text-samples
 """
 
 import csv
@@ -150,7 +150,7 @@ def main(
     elif use_text_samples:
         lengths_map = _resolve_lengths_via_text_samples(labels)
     else:
-        raise ValueError("Provide --lengths_csv or --use_text_samples to resolve token lengths.")
+        raise ValueError("Provide --lengths-csv or --use-text-samples to resolve token lengths.")
 
     # Load corpus mean
     cm_t = load_corpus_mean(mean_path)
@@ -191,4 +191,3 @@ def main(
         writer.writerows(rows_out)
 
     print(f"✅ Wrote comparison report to {report_out}")
-

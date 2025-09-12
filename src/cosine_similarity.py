@@ -6,20 +6,21 @@ Pythia-12B model and calculates their cosine similarity.
 
 Usage:
     # Direct text:
-    modal run cosine_similarity.py --text1 "First text" --text2 "Second text"
-    modal run cosine_similarity.py --text1 "First text" --text2 "Second text" --mode "long"
+    modal run -m src.cosine_similarity --text1 "First text" --text2 "Second text"
+    modal run -m src.cosine_similarity --text1 "First text" --text2 "Second text" --mode long
 
     # File paths (auto-detected):
-    modal run cosine_similarity.py --text1 "document1.txt" --text2 "document2.txt"
+    modal run -m src.cosine_similarity --text1 "document1.txt" --text2 "document2.txt"
 
     # Explicit file parameters:
-    modal run cosine_similarity.py --file1 "doc1.txt" --file2 "doc2.txt"
+    modal run -m src.cosine_similarity --file1 "doc1.txt" --file2 "doc2.txt"
 
     # Mixed input types:
-    modal run cosine_similarity.py --text1 "Direct text here" --file2 "document.txt"
+    modal run -m src.cosine_similarity --text1 "Direct text here" --file2 "document.txt"
 """
 
 import modal
+from modal import enable_output
 import numpy as np
 from typing import List
 from .utils.volume_utils import find_latest_corpus_mean_path
@@ -30,16 +31,14 @@ Pythia12BExtractor = modal.Cls.from_name(
 )
 # Define image with torch for the pooling utilities
 image = modal.Image.debian_slim(python_version="3.10").pip_install(
-    "torch>=2.0.0",
-    "safetensors>=0.3.1",
-    "numpy>=1.21.0",
+    "torch>=2.0.0", "safetensors>=0.3.1", "numpy>=1.21.0", "packaging"
 )
 
 app = modal.App("cosine-similarity", image=image)
 
 # Mount training data volume to discover corpus mean files when centering
 training_volume = modal.Volume.from_name(
-    "activation-vector-project", create_if_missing=True
+    "training_data", create_if_missing=True
 )
 
 
@@ -127,16 +126,16 @@ def main(
 
     Usage:
         # Direct text:
-        modal run cosine_similarity.py --text1 "Hello world" --text2 "Hi there"
+        modal run -m src.cosine_similarity --text1 "Hello world" --text2 "Hi there"
 
         # File paths:
-        modal run cosine_similarity.py --text1 "document1.txt" --text2 "document2.txt"
+        modal run -m src.cosine_similarity --text1 "document1.txt" --text2 "document2.txt"
 
         # Explicit file parameters:
-        modal run cosine_similarity.py --file1 "doc1.txt" --file2 "doc2.txt"
+        modal run -m src.cosine_similarity --file1 "doc1.txt" --file2 "doc2.txt"
 
         # Mixed:
-        modal run cosine_similarity.py --text1 "Direct text" --file2 "document.txt"
+        modal run -m src.cosine_similarity --text1 "Direct text" --file2 "document.txt"
     """
 
     print("🧮 Pythia-12B Activation Vector Cosine Similarity")
@@ -165,7 +164,8 @@ def main(
     # Resolve centering vector if requested
     centering_vector = None
     if center:
-        centering_vector = resolve_latest_corpus_mean_path.remote()
+        with enable_output():
+            centering_vector = resolve_latest_corpus_mean_path.remote()
         print(f"📦 Using corpus mean: {centering_vector}")
 
     # Extract vectors for both texts
@@ -173,21 +173,23 @@ def main(
 
     # Get vector for text 1
     print("   Extracting vector 1...")
-    result1 = extractor.get_activation_vector.remote(
-        text=actual_text1,
-        pooling_strategy=mode,
-        center=center,
-        centering_vector=centering_vector,
-    )
+    with enable_output():
+        result1 = extractor.get_activation_vector.remote(
+            text=actual_text1,
+            pooling_strategy=mode,
+            center=center,
+            centering_vector=centering_vector,
+        )
 
     # Get vector for text 2
     print("   Extracting vector 2...")
-    result2 = extractor.get_activation_vector.remote(
-        text=actual_text2,
-        pooling_strategy=mode,
-        center=center,
-        centering_vector=centering_vector,
-    )
+    with enable_output():
+        result2 = extractor.get_activation_vector.remote(
+            text=actual_text2,
+            pooling_strategy=mode,
+            center=center,
+            centering_vector=centering_vector,
+        )
 
     # Verify vectors have same shape
     if result1["shape"] != result2["shape"]:

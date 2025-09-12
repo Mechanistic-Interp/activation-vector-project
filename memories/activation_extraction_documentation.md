@@ -23,7 +23,7 @@ Example client script for testing and analysis via Modal calls.
 - **Hidden Size (d_model)**: 5120
 - **Total Layers**: 36
 - **Target Layers**: 25, 26, 27 (high-level semantic representations)
-- **GPU**: A100-80GB for efficient processing
+- **GPU**: A100 for efficient processing
 
 ### Activation Extraction Process
 1. Text is tokenized using Pythia tokenizer
@@ -44,28 +44,28 @@ Example client script for testing and analysis via Modal calls.
 
 ### Deploy to Modal
 ```bash
-modal deploy src/extract_vector.py
+modal deploy -m src.extract_vector
 ```
 
 ### Local Testing
 ```bash
 # Test extraction
-modal run src/extract_vector.py --text "Your text here"
+modal run -m src.extract_vector --text "Your text here"
 
 # Test similarity (see cosine_similarity.py for full example)
-modal run cosine_similarity.py --text1 "A" --text2 "B"
+modal run -m src.cosine_similarity --text1 "A" --text2 "B"
 
 # Generate CSVs for samples
-modal run generate_vector_csv.py
+modal run -m src.generate_vector_csv
 ```
 
 ### Using the Client
 ```bash
 # Interactive mode
-modal run cosine_similarity.py --text1 "First" --text2 "Second"
+modal run -m src.cosine_similarity --text1 "First" --text2 "Second"
 
 # Compare two texts
-modal run cosine_similarity.py --text1 "First text" --text2 "Second text"
+modal run -m src.cosine_similarity --text1 "First text" --text2 "Second text"
 
 # Batch comparison
 # See generate_vector_csv.py for batch export

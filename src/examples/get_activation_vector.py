@@ -2,9 +2,9 @@
 Minimal example: call get_activation_vector via Modal.
 
 Usage examples:
-  modal run src/examples/get_activation_vector.py --text "Hello world" --mode short
-  modal run src/examples/get_activation_vector.py --text "Some longer text..." --mode long
-  modal run src/examples/get_activation_vector.py --file src/training_data/text-samples/01_bonded_cats_apartment.txt --mode long --center
+  modal run -m src.examples.get_activation_vector --text "Hello world" --mode short
+  modal run -m src.examples.get_activation_vector --text "Some longer text..." --mode long
+  modal run -m src.examples.get_activation_vector --file src/training_data/text-samples/01_bonded_cats_apartment.txt --mode long --center
 
 Notes:
 - When --center is set, the script resolves the latest corpus mean path from the
@@ -13,7 +13,6 @@ Notes:
 
 from __future__ import annotations
 
-import argparse
 import os
 from typing import Optional
 
@@ -26,11 +25,19 @@ from src.utils.volume_utils import find_latest_corpus_mean_path
 Pythia12BExtractor = modal.Cls.from_name(
     "activation-vector-project", "Pythia12BActivationExtractor"
 )
+# Define image with torch for the pooling utilities
+image = modal.Image.debian_slim(python_version="3.10").pip_install(
+    "torch>=2.0.0",
+    "safetensors>=0.3.1",
+    "numpy>=1.21.0",
+    "packaging",
+)
 
-app = modal.App("example-get-activation-vector")
+
+app = modal.App("example-get-activation-vector", image=image)
 
 # Mount training data volume to resolve corpus mean path when centering
-training_volume = modal.Volume.from_name("training-data-volume", create_if_missing=True)
+training_volume = modal.Volume.from_name("training_data", create_if_missing=True)
 
 
 @app.function(volumes={"/training_data": training_volume}, timeout=60)
@@ -49,27 +56,23 @@ def _load_text(maybe_path: str) -> str:
 def main(
     text: str = "The capital of France is Paris.",
     file: Optional[str] = None,
-    mode: str = "short",  # "short" (5120) or "long" (20480)
-    center: bool = False,
 ):
     # Prepare input text
     actual_text = _load_text(file) if file else _load_text(text)
-    print("📝 Text (preview):", (actual_text[:120] + "...") if len(actual_text) > 120 else actual_text)
-    print("🔧 Mode:", mode)
-    print("🎯 Centering:", center)
+    print(
+        "📝 Text (preview):",
+        (actual_text[:120] + "...") if len(actual_text) > 120 else actual_text,
+    )
 
-    # Resolve corpus mean path if requested
-    centering_vector = None
-    if center:
-        centering_vector = resolve_latest_corpus_mean_path.remote()
-        print("📦 Using corpus mean:", centering_vector)
+    centering_vector = resolve_latest_corpus_mean_path.remote()
+    print("📦 Using corpus mean:", centering_vector)
 
     # Call the deployed extractor
     extractor = Pythia12BExtractor()
     result = extractor.get_activation_vector.remote(
         text=actual_text,
-        pooling_strategy=mode,
-        center=center,
+        pooling_strategy="long",
+        center=True,
         centering_vector=centering_vector,
     )
 
@@ -90,4 +93,3 @@ def main(
         "centered": result.get("centered"),
         "pooling_strategy": result.get("pooling_strategy"),
     }
-

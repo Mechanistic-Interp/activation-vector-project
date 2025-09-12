@@ -15,7 +15,7 @@
 
 - [ ] **Create batch processing function** using Modal's `.map()`:
   ```python
-  @app.function(gpu="A100-80GB", volumes={"/vectors": volume})
+  @app.function(gpu="A100", volumes={"/vectors": volume})
   def extract_single_vector(text: str, mode: str = "short") -> dict
   ```
 - [ ] **Implement chunking strategy** (process 100-500 texts per batch to manage memory)

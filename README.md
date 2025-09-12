@@ -4,6 +4,18 @@ End-to-end system for extracting, centering, and analyzing Pythia‑12B activati
 
 This README gives newcomers a quick map of the repo, what each part does, and how to run the common workflows.
 
+## CLI Cheat Sheet
+
+- Deploy extractor: `modal deploy -m src.extract_vector`
+- Get one vector: `modal run -m src.examples.get_activation_vector --text "Hello world" --mode short`
+- Generate CSVs: `modal run -m src.generate_vector_csv [--center]`
+- Compare raw vs centered (long): `modal run -m src.diagnostics.compare_vectors_with_mean --mean-path outputs/corpus_mean_xxx.safetensors --raw-csv outputs/matrix_csv/vectors_long_mode_raw.csv --centered-csv outputs/matrix_csv/vectors_long_mode_centered.csv --use-text-samples`
+- Plot heatmap (from CSV): `python -m src.diagnostics.plot_similarity_matrix --csv outputs/matrix_csv/vectors_long_mode_centered.csv --mode long --per-chunk true`
+- Corpus mean (two-stage):
+  - Extract: `modal run -m src.corpus_mean extract --max-docs 1000`
+  - Aggregate: `modal run -m src.corpus_mean aggregate`
+  - Progress: `modal run -m src.corpus_mean check_progress`
+
 ## Project Layout
 
 ```
@@ -68,23 +80,25 @@ activation-vector-project/
 - Centering
   - Subtracts a token‑positioned corpus mean matrix before pooling.
   - For long mode, the identity holds: `(raw_long - centered_long) ≈ pooled_mean_long`.
+ - Snapshots
+   - Class uses Modal memory snapshots with GPU snapshots enabled. Model loads in `@enter(snap=True)` and performs a tiny warmup forward pass so subsequent cold starts are fast after `modal deploy`.
 
 ## Quickstart
 
 1) Deploy the extractor (one‑time):
-- `modal deploy src/extract_vector.py`
+- `modal deploy -m src.extract_vector`
 
 2) Fetch training data to a Modal volume (optional but recommended):
-- `modal run src/training_data/get_training_data.py --num_samples 1000 --save_local`
+- `modal run -m src.training_data.get_training_data --num-samples 1000 --save-local`
 
 3) Compute the corpus mean (two‑stage, detached):
-- Stage 1 extract: `modal run src/corpus_mean.py extract --max_docs 1000`
-- Stage 2 aggregate: `modal run src/corpus_mean.py aggregate`
-- Check progress: `modal run src/corpus_mean.py check_progress`
+- Stage 1 extract: `modal run -m src.corpus_mean extract --max-docs 1000`
+- Stage 2 aggregate: `modal run -m src.corpus_mean aggregate`
+- Check progress: `modal run -m src.corpus_mean check_progress`
 
 4) Generate analysis CSVs for the bundled 20 samples:
-- Raw: `modal run src/generate_vector_csv.py`
-- Centered: `modal run src/generate_vector_csv.py --center`
+- Raw: `modal run -m src.generate_vector_csv`
+- Centered: `modal run -m src.generate_vector_csv --center`
 
 5) Plot cosine‑similarity heatmaps from CSVs (saves under `outputs/diagnostics/`):
 - Long, all chunks combined: `python -m src.diagnostics.plot_similarity_matrix --csv outputs/matrix_csv/vectors_long_mode_centered.csv --mode long`
@@ -92,7 +106,7 @@ activation-vector-project/
 - Short: `python -m src.diagnostics.plot_similarity_matrix --csv outputs/matrix_csv/vectors_short_mode_centered.csv --mode short`
 
 6) Compare raw vs centered against pooled corpus mean (long mode):
-- `modal run src/diagnostics/compare_vectors_with_mean.py --mean_path <path-to-corpus_mean.safetensors> --raw_csv outputs/matrix_csv/vectors_long_mode_raw.csv --centered_csv outputs/matrix_csv/vectors_long_mode_centered.csv --use_text_samples`
+- `modal run -m src.diagnostics.compare_vectors_with_mean --mean-path <path-to-corpus_mean.safetensors> --raw-csv outputs/matrix_csv/vectors_long_mode_raw.csv --centered-csv outputs/matrix_csv/vectors_long_mode_centered.csv --use-text-samples`
 - Report is written to `outputs/diagnostics/compare_report.csv`.
 
 7) Explore vectors locally from CSVs:
@@ -100,8 +114,8 @@ activation-vector-project/
 - Compare two: `python visualize_vectors.py --compare outputs/matrix_csv/vectors_long_mode_centered.csv outputs/matrix_csv/vectors_long_mode_raw.csv`
 
 Example: fetch a single vector directly via Modal:
-- `modal run src/examples/get_activation_vector.py --text "Hello world" --mode short`
-- `modal run src/examples/get_activation_vector.py --file src/training_data/text-samples/01_bonded_cats_apartment.txt --mode long --center`
+- `modal run -m src.examples.get_activation_vector --text "Hello world" --mode short`
+- `modal run -m src.examples.get_activation_vector --file src/training_data/text-samples/01_bonded_cats_apartment.txt --mode long --center`
 
 ## Key Files
 
@@ -123,7 +137,7 @@ Example: fetch a single vector directly via Modal:
 
 - `src/diagnostics/compare_vectors_with_mean.py`
   - Checks the long‑mode identity `(raw − centered) ≈ pooled_mean` per chunk.
-  - Resolves token lengths via `--lengths_csv` or `--use_text_samples`.
+  - Resolves token lengths via `--lengths-csv` or `--use-text-samples`.
   - See docs: `docs/compare_vectors_with_mean.md` for labels and interpretation.
 
 ## Programmatic Use (Modal)

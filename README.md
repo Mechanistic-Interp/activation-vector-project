@@ -6,7 +6,7 @@ This README gives newcomers a quick map of the repo, what each part does, and ho
 
 ## CLI Cheat Sheet
 
-- Deploy extractor: `modal deploy -m src.extract_vector`
+- Deploy extractor: `modal deploy -m src.deployed_apps.extract_vector` (or deploy both with `modal deploy -m src.deploy`)
 - Get one vector: `modal run -m src.examples.get_activation_vector --text "Hello world" --mode short`
 - Generate CSVs: `modal run -m src.generate_vector_csv [--center]`
 - Compare raw vs centered (long): `modal run -m src.diagnostics.compare_vectors_with_mean --mean-path outputs/corpus_mean_xxx.safetensors --raw-csv outputs/matrix_csv/vectors_long_mode_raw.csv --centered-csv outputs/matrix_csv/vectors_long_mode_centered.csv --use-text-samples`
@@ -44,7 +44,9 @@ activation-vector-project/
 │   ├── __init__.py
 │   ├── corpus_mean.py           # Parallel extract + checkpointed aggregate on Modal
 │   ├── cosine_similarity.py     # Compare two texts via vector cosine
-│   ├── deploy.py                # Helper for deploying extractor
+│   ├── deploy/                  # Modal deployment package (apps)
+│   │   ├── extract_vector.py    # Activation extractor deployment
+│   │   └── pythia_12b_modal_snapshot.py  # Pythia-12B snapshot deployment
 │   ├── extract_vector.py        # Deployed extractor (Modal class)
 │   ├── generate_vector_csv.py   # Build analysis CSVs from bundled samples
 │   ├── pythia_12b_modal_snapshot.py # GPU snapshot support for faster cold starts
@@ -86,7 +88,7 @@ activation-vector-project/
 ## Quickstart
 
 1) Deploy the extractor (one‑time):
-- `modal deploy -m src.extract_vector`
+- `modal deploy -m src.deployed_apps.extract_vector`
 
 2) Fetch training data to a Modal volume (optional but recommended):
 - `modal run -m src.training_data.get_training_data --num-samples 1000 --save-local`

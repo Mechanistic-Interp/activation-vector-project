@@ -33,6 +33,7 @@ training_volume = modal.Volume.from_name("training_data", create_if_missing=True
 
 # Define the container image with TransformerLens and dependencies
 image = modal.Image.debian_slim(python_version="3.10").pip_install(
+    "numpy<2.0",
     "torch==2.1.0",
     "transformer-lens==2.0.0",
     "transformers>=4.37.2",
@@ -458,13 +459,13 @@ def main(
 
     Usage:
         # Test vector extraction
-        modal run -m src.extract_vector --text "Your text here" --mode short
+        modal run -m src.deployed_apps.extract_vector --text "Your text here" --mode short
 
         # Test matrix extraction (for corpus mean)
-        modal run -m src.extract_vector --text "Your text here" --mode matrix
+        modal run -m src.deployed_apps.extract_vector --text "Your text here" --mode matrix
 
         # Deploy to Modal
-        modal deploy -m src.extract_vector
+        modal deploy -m src.deployed_apps.extract_vector
     """
     print("\n" + "=" * 60)
     print("Pythia 12B Activation Vector Extraction")

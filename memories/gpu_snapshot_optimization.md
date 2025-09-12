@@ -59,7 +59,7 @@ Added torch.compile with warm-up to optimize inference:
 ### First Deployment (Creates Snapshot)
 ```bash
 # Deploy the app (first time will be slow - creating snapshot)
-modal deploy -m src.pythia_12b_modal_snapshot
+modal deploy -m src.deployed_apps.pythia_12b_modal_snapshot
 
 # Note: First deployment takes ~60 seconds to create snapshot
 ```
@@ -67,7 +67,7 @@ modal deploy -m src.pythia_12b_modal_snapshot
 ### Subsequent Starts (Uses Snapshot)
 ```bash
 # Test locally - will use snapshot for fast startup
-modal run -m src.pythia_12b_modal_snapshot
+modal run -m src.deployed_apps.pythia_12b_modal_snapshot
 
 # Or use the deployed endpoint - fast cold starts
 python client.py --endpoint YOUR_ENDPOINT_URL

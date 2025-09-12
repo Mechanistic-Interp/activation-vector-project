@@ -44,13 +44,13 @@ Example client script for testing and analysis via Modal calls.
 
 ### Deploy to Modal
 ```bash
-modal deploy -m src.extract_vector
+modal deploy -m src.deploy
 ```
 
 ### Local Testing
 ```bash
 # Test extraction
-modal run -m src.extract_vector --text "Your text here"
+modal run -m src.deployed_apps.extract_vector --text "Your text here"
 
 # Test similarity (see cosine_similarity.py for full example)
 modal run -m src.cosine_similarity --text1 "A" --text2 "B"

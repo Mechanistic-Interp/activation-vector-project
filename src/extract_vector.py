@@ -38,6 +38,7 @@ image = modal.Image.debian_slim(python_version="3.10").pip_install(
     "transformer-lens==2.0.0",
     "transformers>=4.37.2",
     "safetensors==0.4.1",
+    "typeguard",
 )
 
 # Import heavy dependencies at image level for GPU snapshots

@@ -10,7 +10,7 @@ image = modal.Image.debian_slim(python_version="3.11").pip_install(
     "datasets", "torch", "huggingface_hub"
 )
 
-volume = modal.Volume.from_name("training-data-volume", create_if_missing=True)
+volume = modal.Volume.from_name("activation-vector-project", create_if_missing=True)
 
 
 def filter_by_word_count(text: str, min_words: int, max_words: int) -> bool:

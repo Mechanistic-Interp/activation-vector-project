@@ -32,12 +32,15 @@ Pythia12BExtractor = modal.Cls.from_name(
 image = modal.Image.debian_slim(python_version="3.10").pip_install(
     "torch>=2.0.0",
     "safetensors>=0.3.1",
+    "numpy>=1.21.0",
 )
 
 app = modal.App("cosine-similarity", image=image)
 
 # Mount training data volume to discover corpus mean files when centering
-training_volume = modal.Volume.from_name("training-data-volume", create_if_missing=True)
+training_volume = modal.Volume.from_name(
+    "activation-vector-project", create_if_missing=True
+)
 
 
 @app.function(volumes={"/training_data": training_volume}, timeout=60)

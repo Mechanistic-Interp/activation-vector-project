@@ -28,7 +28,9 @@ model_cache = modal.Volume.from_name(
 )
 
 # Reference training data volume for corpus mean access
-training_volume = modal.Volume.from_name("training-data-volume", create_if_missing=True)
+training_volume = modal.Volume.from_name(
+    "activation-vector-project", create_if_missing=True
+)
 
 # Define the container image with TransformerLens and dependencies
 image = modal.Image.debian_slim(python_version="3.10").pip_install(
@@ -128,8 +130,6 @@ class Pythia12BActivationExtractor:
             print("GPU memory snapshot will be created after this method completes.")
 
     # Helper functions for shared extraction logic
-
-    
 
     def _extract_and_prepare_activations(
         self,

@@ -1,152 +1,150 @@
 # Activation Vector Project
 
-Pythia-12B activation vector extraction system using TransformerLens on Modal.
+End-to-end system for extracting, centering, and analyzing Pythia‑12B activation vectors using Modal. Includes utilities to compute a corpus mean, generate analysis matrices, and plot diagnostics.
 
-## Project Structure
+This README gives newcomers a quick map of the repo, what each part does, and how to run the common workflows.
+
+## Project Layout
 
 ```
 activation-vector-project/
-├── .claude/
-│   └── settings.local.json
-├── memories/
+├── README.md
+├── memories/                     # Research notes and plans
 │   ├── activation_extraction_documentation.md
 │   ├── activation_mean_computation_todo.md
+│   ├── corpus_mean_implementation_plan.md
 │   ├── gpu_snapshot_optimization.md
+│   ├── implementation_plan_extract_vector_fix.md
 │   ├── notes.md
 │   └── pythia_12b_setup_todo.md
-├── outputs/
-│   ├── activation_vector_short_30.safetensors
-│   └── activation_vector_short_30_metadata.json
-└── src/
-    ├── __init__.py
-    ├── .claude/
-    │   └── settings.local.json
-    ├── deploy.py
-    ├── extract_vector.py
-    ├── utils/
-    │   ├── __init__.py
-    │   ├── pooling.py
-    │   ├── io.py
-    │   ├── centering.py
-    │   └── volume_utils.py
-    ├── pythia_12b_modal_snapshot.py
-    └── training_data/
-        ├── get_training_data.py
-        ├── inspect_data.ipynb
-        ├── inspect_data.py
-        └── training_data.pkl
+├── outputs/                      # Artifacts written by jobs/scripts
+│   ├── activation_vector_*.safetensors
+│   ├── activation_vector_*_metadata.json
+│   ├── diagnostics/             # Plots and CSVs from diagnostics tools
+│   │   ├── similarity_long_all_*.png
+│   │   └── compare_report.csv
+│   └── matrix_csv/              # Column-oriented vector CSVs (rows=dims)
+│       ├── vectors_long_mode_raw.csv
+│       ├── vectors_long_mode_centered.csv
+│       ├── vectors_short_mode_raw.csv
+│       └── vectors_short_mode_centered.csv
+├── src/
+│   ├── __init__.py
+│   ├── corpus_mean.py           # Parallel extract + checkpointed aggregate on Modal
+│   ├── cosine_similarity.py     # Compare two texts via vector cosine
+│   ├── deploy.py                # Helper for deploying extractor
+│   ├── extract_vector.py        # Deployed extractor (Modal class)
+│   ├── generate_vector_csv.py   # Build analysis CSVs from bundled samples
+│   ├── pythia_12b_modal_snapshot.py # GPU snapshot support for faster cold starts
+│   ├── diagnostics/
+│   │   ├── compare_vectors_local.py     # Local comparison helpers
+│   │   ├── compare_vectors_with_mean.py # Compare raw/centered vs pooled mean
+│   │   ├── plot_similarity_matrix.py    # Heatmaps of cosine similarity
+│   │   └── visualize_vectors.py         # Rich vector distribution visualizations
+│   ├── examples/
+│   │   └── get_activation_vector.py     # Minimal example using modal run
+│   ├── training_data/
+│   │   ├── get_training_data.py         # Fetch/cache dataset samples to volume
+│   │   ├── inspect_data.ipynb
+│   │   ├── inspect_data.py
+│   │   ├── text-samples/                # 10 long + 10 short texts used in CSVs
+│   │   │   └── ...
+│   │   └── training_data.pkl
+│   └── utils/
+│       ├── centering.py         # Mean subtraction + loader utilities
+│       ├── diagnostics.py       # Core math for expected-diff checks
+│       ├── io.py                # I/O helpers
+│       ├── pooling.py           # Short/long pooling implementations
+│       └── volume_utils.py      # Resolve latest corpus-mean path
+├── visualize_vectors.py         # Standalone CSV visualizer (local)
+└── visualize_vectors_simple.py  # Minimal plotting utility (local)
 ```
 
-## Directory Descriptions
+## Concepts
 
-### `src/`
-Main source code directory containing the activation extraction system.
+- Vector modes
+  - `short` → 5120 dims. Mean across layers, then exp-weight across tokens.
+  - `long` → 20480 dims. Concatenation of 4×5120: [last, 2.3%, 6.7%, 15.9% exp-weight].
+- Centering
+  - Subtracts a token‑positioned corpus mean matrix before pooling.
+  - For long mode, the identity holds: `(raw_long - centered_long) ≈ pooled_mean_long`.
 
-- **`extract_vector.py`** - Primary Modal application for Pythia-12B activation extraction. Contains the `Pythia12BActivationExtractor` class with methods for getting activation vectors and model information. Includes web endpoints and local entrypoint for testing.
+## Quickstart
 
-- **`src/utils/pooling.py`** - Token pooling utilities for activation matrices. Exposes two strategies:
-  - `short`: single 5120-d vector via exponential weighting across tokens (after mean across layers)
-  - `long`: 4×5120 concatenation of [last token, ExpWeight-A (≈2.3%), ExpWeight-B (≈6.7%), ExpWeight-C (≈15.9%)]
-  All computations performed in float32 for numerical stability.
+1) Deploy the extractor (one‑time):
+- `modal deploy src/extract_vector.py`
 
-- **`deploy.py`** - Deployment utilities and configuration helpers.
+2) Fetch training data to a Modal volume (optional but recommended):
+- `modal run src/training_data/get_training_data.py --num_samples 1000 --save_local`
 
-- **`pythia_12b_modal_snapshot.py`** - GPU memory snapshot management for faster Modal container cold starts.
+3) Compute the corpus mean (two‑stage, detached):
+- Stage 1 extract: `modal run src/corpus_mean.py extract --max_docs 1000`
+- Stage 2 aggregate: `modal run src/corpus_mean.py aggregate`
+- Check progress: `modal run src/corpus_mean.py check_progress`
 
-### `src/training_data/`
-Training data pipeline for C4 dataset processing.
+4) Generate analysis CSVs for the bundled 20 samples:
+- Raw: `modal run src/generate_vector_csv.py`
+- Centered: `modal run src/generate_vector_csv.py --center`
 
-- **`get_training_data.py`** - Modal function to fetch and cache C4 dataset samples. Supports configurable sampling, caching to Modal volumes, and local file export.
+5) Plot cosine‑similarity heatmaps from CSVs (saves under `outputs/diagnostics/`):
+- Long, all chunks combined: `python -m src.diagnostics.plot_similarity_matrix --csv outputs/matrix_csv/vectors_long_mode_centered.csv --mode long`
+- Long, per‑chunk: `python -m src.diagnostics.plot_similarity_matrix --csv outputs/matrix_csv/vectors_long_mode_centered.csv --mode long --per-chunk true`
+- Short: `python -m src.diagnostics.plot_similarity_matrix --csv outputs/matrix_csv/vectors_short_mode_centered.csv --mode short`
 
-- **`inspect_data.py`** - Data analysis utilities for examining training samples.
+6) Compare raw vs centered against pooled corpus mean (long mode):
+- `modal run src/diagnostics/compare_vectors_with_mean.py --mean_path <path-to-corpus_mean.safetensors> --raw_csv outputs/matrix_csv/vectors_long_mode_raw.csv --centered_csv outputs/matrix_csv/vectors_long_mode_centered.csv --use_text_samples`
+- Report is written to `outputs/diagnostics/compare_report.csv`.
 
-- **`inspect_data.ipynb`** - Jupyter notebook for interactive data exploration.
+7) Explore vectors locally from CSVs:
+- Single file: `python visualize_vectors.py --file outputs/matrix_csv/vectors_long_mode_centered.csv`
+- Compare two: `python visualize_vectors.py --compare outputs/matrix_csv/vectors_long_mode_centered.csv outputs/matrix_csv/vectors_long_mode_raw.csv`
 
-- **`training_data.pkl`** - Cached training data samples in pickle format.
+Example: fetch a single vector directly via Modal:
+- `modal run src/examples/get_activation_vector.py --text "Hello world" --mode short`
+- `modal run src/examples/get_activation_vector.py --file src/training_data/text-samples/01_bonded_cats_apartment.txt --mode long --center`
 
-### `memories/`
-Research documentation and development notes.
+## Key Files
 
-- **`activation_extraction_documentation.md`** - Comprehensive system documentation including technical details, usage examples, and API specifications.
+- `src/extract_vector.py`
+  - Modal class `Pythia12BActivationExtractor` with endpoints: activation matrix, pooled vectors, metadata.
+  - Supports `center=True` with `centering_vector` path resolved via volume utilities.
 
-- **`activation_mean_computation_todo.md`** - Notes on mean vector computation strategies.
+- `src/utils/pooling.py`
+  - Implements the `short` and `long` pooling strategies in float32.
 
-- **`gpu_snapshot_optimization.md`** - GPU optimization research and memory management notes.
+- `src/corpus_mean.py`
+  - Stage 1: parallel per‑document extraction to volume.
+  - Stage 2: checkpointed aggregation that resumes and can run detached.
 
-- **`notes.md`** - General research notes and observations.
+- `src/diagnostics/plot_similarity_matrix.py`
+  - Renders cosine‑similarity heatmaps from column‑oriented vector CSVs.
+  - Supports `--mode short|long` and optional `--per-chunk true` (long only).
+  - All plot text (titles, ticks, colorbar, annotations) is black for readability.
 
-- **`pythia_12b_setup_todo.md`** - Model setup and configuration documentation.
+- `src/diagnostics/compare_vectors_with_mean.py`
+  - Checks the long‑mode identity `(raw − centered) ≈ pooled_mean` per chunk.
+  - Resolves token lengths via `--lengths_csv` or `--use_text_samples`.
+  - See docs: `docs/compare_vectors_with_mean.md` for labels and interpretation.
 
-### `outputs/`
-Generated activation vectors and associated metadata.
+## Programmatic Use (Modal)
 
-- **`activation_vector_short_30.safetensors`** - Saved activation vector in SafeTensors format (fp16).
+- Create a client: `modal.Cls.from_name("activation-vector-project", "Pythia12BActivationExtractor")`
+- Call remotely, e.g. `get_activation_vector.remote(text=..., pooling_strategy="short"|"long", center=True|False, centering_vector=<path>)`
+- See `src/cosine_similarity.py` and `src/generate_vector_csv.py` for patterns.
 
-- **`activation_vector_short_30_metadata.json`** - Vector metadata including extraction parameters, model configuration, and shape information.
+## Environment & Dependencies
 
-### `.claude/`
-Claude AI assistant configuration files for project-specific settings.
+- Modal CLI configured for your account
+- Python 3.10 runtime on Modal
+- PyTorch, Transformers, SafeTensors (installed in images defined in scripts)
 
-## Technical Specifications
+## Outputs
 
-**Model**: EleutherAI/pythia-12b
-- Hidden dimensions: 5120 (d_model)
-- Total layers: 36
-- Target layers: 25, 26, 27
-- Precision: FP16 for storage, FP32 for pooling computations
+- `outputs/matrix_csv/` → analysis‑friendly CSVs with columns as samples and rows as dimensions.
+- `outputs/diagnostics/` → plots and comparison reports.
+- `outputs/*.safetensors` → vectors and metadata from ad‑hoc runs.
 
-**Infrastructure**: Modal serverless platform
-- GPU: A100-80GB
-- Memory: 64GB RAM
-- Features: GPU memory snapshots, volume caching
+## Tips
 
-**Vector Output Modes**:
-- Short: 5120-dimensional (mean across layers, then exp-weight across tokens; depth ≈ 6.7% of doc length)
-- Long: 20480-dimensional (concat of [last token, 2.3%, 6.7%, 15.9% exp-weighted pools])
-
-## Usage
-
-### Local Testing
-```bash
-modal run src/extract_vector.py --text "Your text here"
-```
-
-### Deployment
-```bash
-modal deploy src/extract_vector.py
-```
-
-### Training Data Fetch
-```bash
-modal run src/training_data/get_training_data.py --num_samples 1000 --save_local
-```
-
-## Programmatic Usage (Modal)
-
-Use Modal method calls rather than HTTP endpoints. Example: see `cosine_similarity.py` and `generate_vector_csv.py` for patterns using `modal.Cls.from_name("activation-vector-project", "Pythia12BActivationExtractor")` and calling `.get_activation_vector.remote(text=..., pooling_strategy="short"|"long")`.
-
-## Diagnostics & Visualization
-
-- Generate centered/raw CSVs for bundled samples:
-  - `modal run generate_vector_csv.py` (raw)
-  - `modal run generate_vector_csv.py --center` (centered via latest corpus mean in volume)
-
-- Visualize correctness for a specific text (saves plots under `outputs/diagnostics`):
-  ```bash
-  modal run src/diagnostics/visualize_vectors.py --text "Your text here" --center --mode long
-  # or
-  modal run src/diagnostics/visualize_vectors.py --file path/to/text.txt --center --mode long
-  ```
-  The tool compares `(raw_long - centered_long)` against the predicted mean contribution
-  obtained by pooling the corpus mean slice with the same weighting curves, and plots:
-  - Long vector chunk norms: raw vs centered vs (raw - centered)
-  - Alignment per chunk with cosine similarity overlays
-
-## Dependencies
-
-- Modal
-- TransformerLens
-- PyTorch
-- Transformers
-- SafeTensors
-- Datasets (for C4 data)
+- Negative cosine values in similarity matrices are fine; they indicate anticorrelation (angles > 90°). When vectors are mean‑centered, small negatives are common.
+- Long‑mode per‑chunk plots help diagnose which pooling window contributes most to similarities.

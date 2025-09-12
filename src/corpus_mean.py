@@ -35,7 +35,9 @@ Pythia12BExtractor = modal.Cls.from_name(
 )
 
 # Reference training data volume
-training_volume = modal.Volume.from_name("training-data-volume", create_if_missing=True)
+training_volume = modal.Volume.from_name(
+    "activation-vector-project", create_if_missing=True
+)
 
 # Create corpus mean computation app
 app = modal.App("corpus-mean-extraction")

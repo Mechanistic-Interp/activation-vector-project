@@ -49,7 +49,7 @@ Pythia12BExtractor = modal.Cls.from_name(
 )
 
 # Create volume reference for training data
-training_volume = modal.Volume.from_name("training-data-volume")
+training_volume = modal.Volume.from_name("activation-vector-project")
 
 app = modal.App("corpus-mean-computation")
 
@@ -155,7 +155,7 @@ activation_matrix = torch.tensor(result["activation_matrix"])
 ### ✅ **Volume Access**
 ```python
 # Reference existing volume
-training_volume = modal.Volume.from_name("training-data-volume")
+training_volume = modal.Volume.from_name("activation-vector-project")
 
 # Mount in function
 @app.function(volumes={"/training_data": training_volume})

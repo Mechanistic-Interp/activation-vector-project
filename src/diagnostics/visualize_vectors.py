@@ -10,7 +10,7 @@ Usage examples:
 
 Behavior:
   - Resolves latest corpus_mean_*.safetensors from the mounted Modal volume
-    (training-data-volume) when --center is passed.
+    (activation-vector-project) when --center is passed.
   - Extracts raw and centered vectors (short/long) and the activation matrix
     (to determine effective token length) for the given text.
   - For long vectors, splits into 4 chunks: [last, 2.3%, 6.7%, 15.9%].
@@ -35,7 +35,9 @@ Pythia12BExtractor = modal.Cls.from_name(
 app = modal.App("vector-diagnostics")
 
 # Mount training data to resolve corpus mean file
-training_volume = modal.Volume.from_name("training-data-volume", create_if_missing=True)
+training_volume = modal.Volume.from_name(
+    "activation-vector-project", create_if_missing=True
+)
 
 
 @app.function(volumes={"/training_data": training_volume}, timeout=60)

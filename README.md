@@ -158,7 +158,7 @@ Example: fetch a single vector directly via Modal:
 - `outputs/diagnostics/` → plots and comparison reports.
 - `outputs/*.safetensors` → vectors and metadata from ad‑hoc runs.
 
-## Tips
+## Tips v2
 
 - Negative cosine values in similarity matrices are fine; they indicate anticorrelation (angles > 90°). When vectors are mean‑centered, small negatives are common.
 - Long‑mode per‑chunk plots help diagnose which pooling window contributes most to similarities.

@@ -40,7 +40,7 @@ with image.imports():
     memory=65536,  # 64GB RAM
     volumes={"/cache": model_cache},
     timeout=900,  # 15 minute timeout
-    scaledown_window=120,  # Keep warm for 2 minutes
+    scaledown_window=600,  # Keep warm for 2 minutes
     enable_memory_snapshot=True,  # Enable memory snapshots
     experimental_options={"enable_gpu_snapshot": True},  # Snapshot GPU memory
     max_containers=10,  # enable parallel containers if needed

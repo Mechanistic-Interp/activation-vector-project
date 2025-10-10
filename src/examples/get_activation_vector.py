@@ -6,6 +6,17 @@ Usage examples:
   modal run -m src.examples.get_activation_vector --text "Some longer text..." --mode long
   modal run -m src.examples.get_activation_vector --file src/training_data/text-samples/01_bonded_cats_apartment.txt --mode long --center
 
+Save to CSV (two-line format):
+  modal run -m src.examples.get_activation_vector \
+    --file src/training_data/text-samples/01_bonded_cats_apartment.txt \
+    --mode long \
+    --center \
+    --output-csv outputs/bonded_cats_long.csv
+
+CSV format produced:
+- Header: "<file_name>_<mode>" (e.g., "01_bonded_cats_apartment_long")
+- Next line: the full vector values as a single row (comma-separated)
+
 Notes:
 - When --center is set, the script resolves the latest corpus mean path from the
   mounted training-data volume.
@@ -14,6 +25,7 @@ Notes:
 from __future__ import annotations
 
 import os
+import csv
 from typing import Optional
 
 import modal
@@ -56,6 +68,9 @@ def _load_text(maybe_path: str) -> str:
 def main(
     text: str = "The capital of France is Paris.",
     file: Optional[str] = None,
+    mode: str = "long",
+    center: bool = True,
+    output_csv: Optional[str] = None,
 ):
     # Prepare input text
     actual_text = _load_text(file) if file else _load_text(text)
@@ -64,15 +79,20 @@ def main(
         (actual_text[:120] + "...") if len(actual_text) > 120 else actual_text,
     )
 
-    centering_vector = resolve_latest_corpus_mean_path.remote()
-    print("📦 Using corpus mean:", centering_vector)
+    # Resolve centering vector if requested
+    centering_vector = None
+    if center:
+        centering_vector = resolve_latest_corpus_mean_path.remote()
+        print("📦 Using corpus mean:", centering_vector)
+    else:
+        print("📦 Centering disabled")
 
     # Call the deployed extractor
     extractor = Pythia12BExtractor()
     result = extractor.get_activation_vector.remote(
         text=actual_text,
-        pooling_strategy="long",
-        center=True,
+        pooling_strategy=mode,
+        center=center,
         centering_vector=centering_vector,
     )
 
@@ -88,8 +108,36 @@ def main(
     preview = ", ".join(f"{v:.5f}" for v in vec[:8])
     print("   Values [0:8]:", preview)
 
+    # Optionally save to CSV in the requested format
+    if output_csv:
+        # Determine header name based on file name (if provided) and mode
+        if file and os.path.isfile(file):
+            base_name = os.path.splitext(os.path.basename(file))[0]
+        else:
+            base_name = "input_text"
+        header_name = f"{base_name}_{mode}"
+
+        # If output is a directory, create a sensible filename
+        out_path = output_csv
+        if os.path.isdir(out_path):
+            out_path = os.path.join(out_path, f"{header_name}.csv")
+        elif not out_path.lower().endswith(".csv"):
+            # Treat as a directory path that doesn't yet exist
+            os.makedirs(out_path, exist_ok=True)
+            out_path = os.path.join(out_path, f"{header_name}.csv")
+        else:
+            os.makedirs(os.path.dirname(out_path) or ".", exist_ok=True)
+
+        # Write header on first line and vector vertically as a single column
+        with open(out_path, "w", newline="", encoding="utf-8") as f:
+            w = csv.writer(f)
+            w.writerow([header_name])
+            w.writerows([[v] for v in vec])
+        print(f"💾 Saved CSV to: {out_path}")
+
     return {
         "shape": shape,
         "centered": result.get("centered"),
         "pooling_strategy": result.get("pooling_strategy"),
+        "saved_csv": bool(output_csv),
     }

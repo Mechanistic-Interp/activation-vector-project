@@ -58,7 +58,7 @@ with image.imports():
         "/training_data": training_volume,
     },
     timeout=900,  # 15 minute timeout
-    scaledown_window=120,  # Keep warm for 2 minutes
+    scaledown_window=600,  # Keep warm for 2 minutes
     enable_memory_snapshot=True,  # Enable memory snapshots for fast cold starts
     experimental_options={"enable_gpu_snapshot": True},  # Snapshot GPU memory
     # Scaling parameters optimized for sequential processing with multiple containers

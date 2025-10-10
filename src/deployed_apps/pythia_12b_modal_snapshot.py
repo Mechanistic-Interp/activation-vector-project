@@ -5,7 +5,7 @@ Optimized for fast cold starts using GPU memory snapshotting (no web endpoints).
 
 import modal
 from modal import enable_output
-from typing import Optional, Dict, Any
+from typing import Dict, Any
 
 # Create Modal app
 app = modal.App("pythia-12b-snapshot")

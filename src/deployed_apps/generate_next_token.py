@@ -22,13 +22,34 @@ Pythia12BInference = modal.Cls.from_name(
     "activation-vector-project", "Pythia12BSnapshotInference"
 )
 
-app = modal.App("example-generate-next-token")
+app = modal.App("generate-next-token")
 
 
 def _load_text_from_file(file_path: str) -> str:
     """Load text from file."""
     with open(file_path, "r", encoding="utf-8") as f:
         return f.read().strip()
+
+
+@app.function()
+def generate_next_token(
+    text: str,
+    temperature: float = 0.01,
+    top_p: float = 0.95,
+    top_k: int = 50,
+    do_sample: bool = True,
+    return_logits: bool = False,
+):
+    model = Pythia12BInference()
+    result = model.generate_single_token.remote(
+        text=text,
+        temperature=temperature,
+        top_p=top_p,
+        top_k=top_k,
+        do_sample=do_sample,
+        return_logits=return_logits,
+    )
+    return result
 
 
 @app.local_entrypoint()

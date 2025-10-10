@@ -6,9 +6,11 @@ from modal import App
 
 from .deployed_apps.extract_vector import app as extract_vector_app
 from .deployed_apps.pythia_12b_modal_snapshot import app as pythia12b_snapshot_app
+from .deployed_apps.generate_next_token import app as generate_next_token_app
 
 app = (
     App("activation-vector-project")
     .include(extract_vector_app)
     .include(pythia12b_snapshot_app)
+    .include(generate_next_token_app)
 )

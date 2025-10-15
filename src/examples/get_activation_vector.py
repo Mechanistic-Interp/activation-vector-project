@@ -131,10 +131,11 @@ def main(
         # Write header on first line and vector vertically as a single column
         with open(out_path, "w", newline="", encoding="utf-8") as f:
             w = csv.writer(f)
-            w.writerow([header_name])
-            w.writerows([[v] for v in vec])
-        print(f"💾 Saved CSV to: {out_path}")
-
+        # Write each vector value as a separate line (numeric format)
+            for v in vec:
+                # Coerce to float to ensure numeric values for CSV consumers
+                w.writerow([float(v)])        
+            print(f"💾 Saved CSV to: {out_path}")
     return {
         "shape": shape,
         "centered": result.get("centered"),

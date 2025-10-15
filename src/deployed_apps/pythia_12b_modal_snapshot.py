@@ -229,6 +229,65 @@ class Pythia12BSnapshotInference:
         return result
 
     @modal.method()
+    def decode_token_ids(self, token_ids: list[int]) -> Dict[str, Any]:
+        """
+        Decode token IDs to text strings.
+        
+        Args:
+            token_ids: List of token IDs to decode
+            
+        Returns:
+            Dictionary with decoded tokens and full text
+        """
+        # Decode individual tokens
+        individual_tokens = [
+            self.tokenizer.decode([token_id], skip_special_tokens=False)
+            for token_id in token_ids
+        ]
+        
+        # Decode full sequence
+        full_text = self.tokenizer.decode(token_ids, skip_special_tokens=False)
+        
+        return {
+            "individual_tokens": individual_tokens,
+            "full_text": full_text,
+            "num_tokens": len(token_ids),
+        }
+    
+    @modal.method()
+    def append_token_to_text(self, text: str, token_id: int) -> Dict[str, Any]:
+        """
+        Append a specific token ID to the given text.
+        
+        Args:
+            text: Current text
+            token_id: Token ID to append
+            
+        Returns:
+            Dictionary with new token string and updated full text
+        """
+        # Tokenize current text
+        inputs = self.tokenizer(
+            text,
+            return_tensors="pt",
+            truncation=True,
+            max_length=2048,
+        )
+        
+        # Append the new token ID
+        new_token_ids = inputs["input_ids"][0].tolist() + [token_id]
+        
+        # Decode to get the new text
+        new_text = self.tokenizer.decode(new_token_ids, skip_special_tokens=True)
+        new_token_text = self.tokenizer.decode([token_id], skip_special_tokens=False)
+        
+        return {
+            "next_token": new_token_text,
+            "next_token_id": token_id,
+            "full_text": new_text,
+        }
+    
+    @modal.method()
     def get_model_info(self) -> Dict[str, Any]:
         """Get information about the loaded model"""
         return {
